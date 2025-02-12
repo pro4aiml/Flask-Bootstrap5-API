@@ -1,0 +1,15 @@
+<div class="card h-100">
+    <div class="card-body">
+        <h5 class="card-title">{{ post.title }}</h5>
+        <p class="card-text">{{ post.body }}</p>
+        <button class="btn btn-sm btn-outline-primary"
+                hx-get="/api/post/{{ post.id }}"
+                hx-target="closest .card"
+                hx-indicator="#global-indicator">
+            <span class="htmx-indicator spinner-border spinner-border-sm me-1" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </span>
+            Refresh
+        </button>
+    </div>
+</div>

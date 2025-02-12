@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask HTMX Demo</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* Theme transition styles */
+        :root {
+            transition: color-scheme 0.3s ease-in-out;
+        }
+
+        body {
+            transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+        }
+
+        .card, .navbar, .sidebar {
+            transition: background-color 0.3s ease-in-out,
+                        border-color 0.3s ease-in-out,
+                        color 0.3s ease-in-out;
+        }
+
+        /* Existing styles */
+        .htmx-indicator {
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+        }
+        .htmx-request .htmx-indicator {
+            opacity: 1;
+        }
+        .htmx-request.htmx-indicator {
+            opacity: 1;
+        }
+        .global-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            background: var(--bs-dark);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 0 1rem rgba(0,0,0,0.5);
+        }
+
+        /* Theme toggle button */
+        .theme-toggle-btn {
+            padding: 0.5rem;
+            border-radius: 50%;
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            background: transparent;
+            color: var(--bs-navbar-color);
+            transition: transform 0.3s ease;
+        }
+
+        .theme-toggle-btn:hover {
+            transform: rotate(30deg);
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            height: 100vh;
+            width: 280px;
+            background: var(--bs-dark);
+            z-index: 1040;
+            transition: left 0.3s ease-in-out;
+            border-right: 1px solid var(--bs-border-color);
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+
+        .sidebar-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1039;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .sidebar-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .content-wrapper {
+            transition: margin-left 0.3s ease-in-out;
+        }
+
+        .content-wrapper.sidebar-active {
+            margin-left: 280px;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--bs-border-color);
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .sidebar-nav .nav-link {
+            padding: 0.75rem 1.5rem;
+            color: var(--bs-body-color);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .sidebar-nav .nav-link:hover,
+        .sidebar-nav .nav-link.active {
+            background-color: var(--bs-primary);
+            color: var(--bs-white);
+        }
+
+        @media (max-width: 768px) {
+            .content-wrapper.sidebar-active {
+                margin-left: 0;
+            }
+        }
+
+        /* Quick Action Menu styles */
+        .quick-actions {
+            position: fixed;
+            right: 2rem;
+            bottom: 2rem;
+            z-index: 1030;
+        }
+
+        .quick-actions-toggle {
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            background: var(--bs-primary);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+
+        .quick-actions-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .quick-actions-toggle.active {
+            transform: rotate(45deg);
+        }
+
+        .quick-actions-menu {
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(1rem);
+            transition: all 0.3s ease;
+        }
+
+        .quick-actions-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .quick-action-item {
+            width: 2.75rem;
+            height: 2.75rem;
+            border-radius: 50%;
+            background: var(--bs-dark);
+            border: none;
+            color: var(--bs-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.2s ease, background-color 0.3s ease;
+            position: relative;
+        }
+
+        .quick-action-item:hover {
+            transform: scale(1.1);
+            background: var(--bs-primary);
+        }
+
+        .quick-action-tooltip {
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            margin-right: 0.75rem;
+            background: var(--bs-dark);
+            color: var(--bs-light);
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .quick-action-item:hover .quick-action-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h5 class="mb-0">Navigation</h5>
+        </div>
+        <div class="sidebar-nav">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">
+                        <i class="bi bi-house-door me-2"></i>Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/posts">
+                        <i class="bi bi-file-text me-2"></i>Posts
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/users">
+                        <i class="bi bi-people me-2"></i>Users
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Backdrop -->
+    <div class="sidebar-backdrop"></div>
+
+    <!-- Top Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <button class="btn btn-link text-light me-3 d-lg-none" id="sidebar-toggle">
+                <i class="bi bi-list"></i>
+            </button>
+            <a class="navbar-brand" href="/">Flask HTMX Demo</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/posts">Posts</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/users">Users</a>
+                    </li>
+                </ul>
+                <div class="ms-auto">
+                    <button class="theme-toggle-btn" id="theme-toggle" aria-label="Toggle theme">
+                        <i class="bi bi-moon-fill"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Global Loading Indicator -->
+    <div id="global-indicator" class="global-indicator htmx-indicator">
+        <div class="d-flex align-items-center">
+            <div class="spinner-border text-primary me-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span class="text-light">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content-wrapper">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Quick Actions Menu -->
+    <div class="quick-actions">
+        <div class="quick-actions-menu">
+            <button class="quick-action-item" aria-label="Go to top">
+                <i class="bi bi-arrow-up"></i>
+                <span class="quick-action-tooltip">Scroll to Top</span>
+            </button>
+            <button class="quick-action-item" aria-label="Toggle theme">
+                <i class="bi bi-palette"></i>
+                <span class="quick-action-tooltip">Toggle Theme</span>
+            </button>
+            <button class="quick-action-item" aria-label="Toggle sidebar">
+                <i class="bi bi-layout-sidebar"></i>
+                <span class="quick-action-tooltip">Toggle Sidebar</span>
+            </button>
+        </div>
+        <button class="quick-actions-toggle" aria-label="Toggle quick actions">
+            <i class="bi bi-plus-lg"></i>
+        </button>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</body>
+</html>

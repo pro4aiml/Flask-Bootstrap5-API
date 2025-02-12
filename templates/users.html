@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">Users</h2>
+
+{% if error %}
+<div class="alert alert-danger" role="alert">
+    {{ error }}
+</div>
+{% else %}
+<div class="row" id="users-container">
+    {% for user in users %}
+        <div class="col-md-4 mb-4">
+            {% include 'partials/user_card.html' %}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

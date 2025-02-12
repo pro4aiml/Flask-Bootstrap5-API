@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">Posts</h2>
+
+{% if error %}
+<div class="alert alert-danger" role="alert">
+    {{ error }}
+</div>
+{% else %}
+<div class="row" id="posts-container">
+    {% for post in posts %}
+        <div class="col-md-6 mb-4">
+            {% include 'partials/post_item.html' %}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div id="loading-indicator" class="text-center d-none">
+    <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+{% endblock %}
